@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Text To Speech</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+     <script src="annyang.min.js" type="text/javascript"></script>
+<script >
+if (annyang) {
+  // Let's define a command.
+  var commands = {
+    'hello': function() { alert('You said hello!'); },
+    'hola': function() { alert('Has dicho hola!'); }
+  };
+
+  annyang.addCallback('resultMatch', function(userSaid, commandText, phrases) {
+  console.log(userSaid); // sample output: 'hello'
+  console.log(commandText); // sample output: 'hello (there)'
+  console.log(phrases); // sample output: ['hello', 'halo', 'yellow', 'polo', 'hello kitty']
+});
+
+annyang.addCallback('resultNoMatch', function(phrases) {
+  console.log(phrases); // sample output: ['hello', 'halo', 'yellow', 'polo', 'hello kitty']
+});
+  // Add our commands to annyang
+  annyang.init(commands, true);
+
+  annyang.debug(true);
+  // Start listening.
+  annyang.start({ autoRestart: true, continuous: true });
+  console.log("Start!")
+}
+</script>
+    
+  </head>
+
+  <body>
+
+    <h1>Demo voz a texto</h1>
+    <p>Abre esta página con Chrome, otorga permisos para usar el micro
+       y di <b>Hello</b> o <b>Hola</b>
+      Debería abrirse una ventanita de confirmación
+</body>
+</html>

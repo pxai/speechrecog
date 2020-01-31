@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Demo Lingua</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="manifest" href="/manifest.json">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.95.1/css/materialize.min.css">
+	</head>
+	<body>
+
+
+        
+        <div class="container">
+          <div class="row">
+            <nav>
+              <div class="nav-wrapper">
+                <div class="col s12">
+                  <a href="#" class="brand-logo">Demo Lingua.es</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+          <form class="col s8 offset-s2">
+            <div class="row">
+              <label>Selecciona una voz</label>
+              <select id="voices"></select>
+            </div>
+            <div class="row">
+              <div class="col s6">
+                <label>Rate</label>
+                <p class="range-field">
+                  <input type="range" id="rate" min="1" max="100" value="10" />
+                </p>
+              </div>
+              <div class="col s6">
+                <label>Pitch</label>
+                <p class="range-field">
+                  <input type="range" id="pitch" min="0" max="2" value="1" />
+                </p>
+              </div>
+              <div class="col s12">
+                <p>N.B. Rate and Pitch only work with native voice.</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="input-field col s12">
+                <textarea id="message" class="materialize-textarea">Hello, how are you?</textarea>
+              </div>
+              <div id="reply" class="input-field col s12" style="text-align: right">
+                 <span class="sayThis" style="display: none;">&gt;&gt;</span>
+                 <span class="userWords">I'm fine thanks</span>
+              </div>
+            </div>
+            <a href="#" id="speak" class="waves-effect waves-light btn">Start conversation</a>
+          </form>  
+        </div>
+        
+        <div id="modal1" class="modal">
+          <h4>Speech Synthesis not supported</h4>
+          <p>Your browser does not support speech synthesis.</p>
+          <p>We recommend you use Google Chrome.</p>
+          <div class="action-bar">
+            <a href="#" class="waves-effect waves-green btn-flat modal-action modal-close">Close</a>
+          </div>
+        </div>
+
+        <script src="jquery.min.js"></script>
+        <script src="artyom.window.js"></script>
+        <script>
+        const artyom = new Artyom();
+        
+        artyom.initialize({
+            continuous:false,
+            lang:"en-GB",
+            obeyKeyword: "listen to me",
+            listen:true,
+            debug:true
+        });
+
+        let points = 0;
+
+        const conversation = [
+            ["Hello how are you", "I'm fine thanks"],
+            ["Do you find me attractive","No you are not my type"],
+            ["Oh please, tell me I'm pretty", "Sorry you're not"],
+            ["You know you love me", "Please leave me alone"],
+        ];
+        let index = 0;
+        const length = conversation.length;
+        let current = [];
+        let previous = '';
+
+        const saySomething = () => {
+            artyom.say("Hola! como estás hoy?");
+        };
+
+        const createSpans = (text) => text
+            .split(" ")
+            .map( (word, i) => $('<span></span>').attr('id',`userword_${i}`).text(`${word} `));
+
+        const goToNext = () => {
+            if (conversation.length) {
+                previous = '';
+                $('.userWords').css("color","black");
+                $('.userWords').attr('id',`userwords_${index}`);
+                index++;
+                current = conversation.shift();
+                console.log("Next piece: ", current);
+                $('#message').val(current[0]);
+                $('.userWords').text(current[1]);
+                $('.userWords').html(createSpans(current[1]));
+                console.log(createSpans(current[1]));
+            } else {
+                alert("Exercise ended. Points: " +  (points/index) +"%");
+                index = 0;
+            }
+        }
+
+        const isCorrect = (result) => {
+           $('.userWords').append(`${result} ✔️`);
+           // $('.userWords').css("color","green");
+            points = points + result;
+        }
+
+        const isIncorrect = (result) => {
+           $('.userWords').append(`${result} ❌`);
+           // $('.userWords').css("color","red");
+        }
+
+        const setColors = (userAnswer, goodAnswer ) => {
+            let correct = 0;
+            userAnswer.split(" ").map( (word, i) => {
+                
+                if (word === goodAnswer.split(" ")[i]) {
+                    $(`.userWords span:nth-child(${i+1})` ).css('color','green');
+                    correct++;
+                } else {
+                    $(`.userWords span:nth-child(${i+1})` ).css('color','red');
+                }
+                console.log(`Comparing: ${word} with ${goodAnswer.split(" ")[i]}`, i, $(`.userWords span:nth-child(${i+1})` ).text(), userAnswer.split(" "), goodAnswer.split(" "));
+            });
+
+            return (correct / goodAnswer.split(" ").length) * 100; 
+        };
+    
+        const userDictation = artyom.newDictation({
+            continuous:true, // Enable continuous if HTTPS connection
+            onResult:function (text) {
+                if (text !== '') {
+                    previous = text.toLowerCase().trim();
+                    setColors(previous, current[1].toLowerCase().trim());
+                    console.log(previous);
+                } else {
+                    console.log("Ended," + previous + " compare with:", current[1].toLowerCase().trim());
+                    let result = setColors(previous, current[1].toLowerCase().trim());
+                    if (previous === current[1].toLowerCase().trim()) {
+                        isCorrect(result);
+                    } else {
+                        isIncorrect(result);
+                    }
+                    setTimeout(() => goToNext(), 2000);
+                }
+                // Do something with the text
+
+                console.log(text);
+            },
+            onStart:function(){
+                console.log("Dictation started by the user");
+            },
+            onEnd:function(){
+                alert("Dictation stopped by the user");
+            }
+        });
+
+        goToNext();
+        userDictation.start();
+    </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.95.1/js/materialize.min.js"></script>
+        <script>
+            $(function(){
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = function() {
+      var $voicelist = $('#voices');
+      console.log("Voices: ", $voicelist);
+      if($voicelist.find('option').length == 0) {
+        speechSynthesis.getVoices().forEach(function(voice, index) {
+            var selected = (index === 4)?" selected":"";
+          var $option = $('<option ' + selected + '>')
+          .val(index)
+          .html(voice.name + (voice.default ? ' (default)' :''));
+
+          $voicelist.append($option);
+        });
+
+        $voicelist.material_select();
+      }
+    }
+
+    $('#speak').click(function(){
+        speak();
+    });
+
+    const speak = () => {
+        var text = $('#message').val();
+        var msg = new SpeechSynthesisUtterance();
+        var voices = window.speechSynthesis.getVoices();
+        msg.voice = voices[4];
+        msg.rate = $('#rate').val() / 10;
+        msg.pitch = $('#pitch').val();
+        msg.text = text;
+
+        msg.onend = function(e) {
+            console.log('Finished in ' + event.elapsedTime + ' seconds.');
+        };
+
+        speechSynthesis.speak(msg);
+            $('.sayThis').show("slow");
+        };
+    };
+
+});
+            </script>
+    </body>
+</html>
